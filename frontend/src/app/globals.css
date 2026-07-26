@@ -1,0 +1,141 @@
+@import "tailwindcss";
+@config "../../tailwind.config.js";
+
+@layer base {
+  :root {
+    /* --- LIGHT THEME (Default) --- */
+    --background: #f9f9f9;
+    --on-background: #131313;
+    
+    --surface: #ffffff;
+    --surface-dim: #f1f1f1;
+    --surface-bright: #ffffff;
+    --surface-container-lowest: #ffffff;
+    --surface-container-low: #f5f5f5;
+    --surface-container: #ededed;
+    --surface-container-high: #e2e2e2;
+    --surface-container-highest: #d7d7d7;
+    
+    --on-surface: #131313;
+    --on-surface-variant: #454747;
+    --inverse-surface: #131313;
+    --inverse-on-surface: #ffffff;
+    
+    --outline: #757878;
+    --outline-variant: #c6c6c7;
+    --surface-tint: #516600;
+    
+    --primary: #131313;
+    --on-primary: #ffffff;
+    --primary-container: #c5f400;
+    --on-primary-container: #161e00;
+    --inverse-primary: #acd600;
+    
+    --secondary: #454747;
+    --on-secondary: #ffffff;
+    --secondary-container: #e2e2e2;
+    --on-secondary-container: #1a1c1c;
+    
+    --tertiary: #313030;
+    --on-tertiary: #ffffff;
+    --tertiary-container: #e5e2e1;
+    --on-tertiary-container: #1c1b1b;
+    
+    --error: #ba1a1a;
+    --on-error: #ffffff;
+    --error-container: #ffdad6;
+    --on-error-container: #410002;
+    --surface-variant: #e2e2e2;
+  }
+
+  .dark {
+    /* --- DARK THEME (Velocity Performance Spec) --- */
+    --background: #131313; /* Deep Obsidian */
+    --on-background: #e5e2e1; /* Pure/Off White */
+    
+    --surface: #131313;
+    --surface-dim: #131313;
+    --surface-bright: #393939;
+    --surface-container-lowest: #0e0e0e;
+    --surface-container-low: #1c1b1b;
+    --surface-container: #20201f;
+    --surface-container-high: #2a2a2a;
+    --surface-container-highest: #353535; /* Matte Charcoal */
+    
+    --on-surface: #e5e2e1;
+    --on-surface-variant: #c4c9ac;
+    --inverse-surface: #e5e2e1;
+    --inverse-on-surface: #313030;
+    
+    --outline: #8e9379;
+    --outline-variant: #444933;
+    --surface-tint: #acd600; /* Volt Lime base */
+    
+    --primary: #ffffff;
+    --on-primary: #293500;
+    --primary-container: #c5f400; /* High-octane Volt */
+    --on-primary-container: #566c00;
+    --inverse-primary: #516600;
+    
+    --secondary: #c6c6c7;
+    --on-secondary: #2f3131;
+    --secondary-container: #454747;
+    --on-secondary-container: #b4b5b5;
+    
+    --tertiary: #ffffff;
+    --on-tertiary: #313030;
+    --tertiary-container: #e5e2e1;
+    --on-tertiary-container: #656464;
+    
+    --error: #ffb4ab;
+    --on-error: #690005;
+    --error-container: #93000a;
+    --on-error-container: #ffdad6;
+    --surface-variant: #353535;
+  }
+}
+
+/* Custom Sports Editorial Typography Utilities */
+@layer components {
+  .text-display-xl {
+    @apply font-sans font-[800] text-[48px] leading-[52px] tracking-tight-xl md:text-[80px] md:leading-[84px];
+  }
+  .text-headline-lg {
+    @apply font-sans font-[700] text-[32px] leading-[38px] tracking-tight-lg md:text-[40px] md:leading-[48px];
+  }
+  .text-headline-md {
+    @apply font-sans font-[700] text-[24px] leading-[32px] tracking-tight-md;
+  }
+  .text-body-lg {
+    @apply font-sans font-[400] text-[18px] leading-[28px] tracking-normal;
+  }
+  .text-body-md {
+    @apply font-sans font-[400] text-[16px] leading-[24px] tracking-normal;
+  }
+  .text-label-bold {
+    @apply font-sans font-[700] text-[14px] leading-[20px] tracking-spec uppercase;
+  }
+  .text-label-sm {
+    @apply font-sans font-[500] text-[12px] leading-[16px] tracking-normal;
+  }
+
+  /* Text stroke effect for performance ticker marquee */
+  .text-stroke {
+    -webkit-text-stroke: 1px var(--on-background);
+    color: transparent;
+  }
+}
+
+/* Hide Google reCAPTCHA badge by default, show it only when explicitly requested (e.g. on auth pages) */
+.grecaptcha-badge {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+body.show-recaptcha .grecaptcha-badge {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}

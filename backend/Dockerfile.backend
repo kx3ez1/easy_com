@@ -1,0 +1,40 @@
+# Build stage
+FROM oven/bun:1-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependency files
+COPY package.json package-lock.json* bun.lockb* ./
+
+# Install all dependencies (including dev dependencies for testing/linting if needed)
+RUN bun install
+
+# Copy source code
+COPY src/ ./src
+
+# Production stage
+FROM oven/bun:1-alpine
+
+WORKDIR /app
+
+# Set environment to production
+ENV NODE_ENV=production
+
+# Copy package files
+COPY package.json package-lock.json* bun.lockb* ./
+
+# Install only production dependencies
+RUN bun install --production
+
+# Copy source TS code directly from the builder stage or context
+COPY --from=builder /app/src ./src
+COPY public/ ./public
+
+# Copy Firebase credentials
+COPY e-commerce-34ab7-2216e35bbeaa.json ./e-commerce-34ab7-2216e35bbeaa.json
+
+# Expose backend port
+EXPOSE 3000
+
+# Serve the production backend directly running TS using Bun
+CMD ["bun", "run", "src/index.ts"]

@@ -48,6 +48,7 @@ function CartContent() {
 
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [updatingSku, setUpdatingSku] = useState<string | null>(null);
 
   const handleUpdateQty = async (sku: string, currentQty: number, change: number) => {
     const newQty = currentQty + change;
@@ -63,6 +64,10 @@ function CartContent() {
       return item;
     });
 
+    const timer = setTimeout(() => {
+      setUpdatingSku(sku);
+    }, 250);
+
     try {
       await dispatch(
         syncCartWithBackend(
@@ -76,11 +81,18 @@ function CartContent() {
     } catch (err) {
       console.error("Failed to update item quantity:", err);
       alert("Failed to update item quantity. Please try again.");
+    } finally {
+      clearTimeout(timer);
+      setUpdatingSku(null);
     }
   };
 
   const handleRemoveItem = async (sku: string) => {
     const updatedItems = cart.items.filter((item) => item.sku !== sku);
+
+    const timer = setTimeout(() => {
+      setUpdatingSku(sku);
+    }, 250);
 
     try {
       await dispatch(
@@ -95,6 +107,9 @@ function CartContent() {
     } catch (err) {
       console.error("Failed to remove item:", err);
       alert("Failed to remove item. Please try again.");
+    } finally {
+      clearTimeout(timer);
+      setUpdatingSku(null);
     }
   };
 
@@ -240,17 +255,27 @@ function CartContent() {
                   {/* Quantity Actions & Price */}
                   <div className="flex flex-col sm:flex-row items-end sm:items-center gap-4">
                     {/* Quantity selectors */}
-                    <div className="flex items-center gap-2 border border-outline rounded-lg p-1 bg-surface">
+                    <div className="flex items-center gap-2 border border-outline rounded-lg p-1 bg-surface relative">
                       <button
                         onClick={() => handleUpdateQty(item.sku, item.qty, -1)}
-                        className="w-7 h-7 flex items-center justify-center font-bold text-on-surface hover:bg-surface-container rounded transition-colors"
+                        disabled={updatingSku === item.sku}
+                        className="w-7 h-7 flex items-center justify-center font-bold text-on-surface hover:bg-surface-container rounded transition-colors disabled:opacity-40"
                       >
                         -
                       </button>
-                       <QuantityDisplay qty={item.qty} className="w-8 text-center text-xs font-bold" />
+                      
+                      {updatingSku === item.sku ? (
+                        <div className="w-8 flex items-center justify-center">
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface-tint/30 border-t-surface-tint"></div>
+                        </div>
+                      ) : (
+                        <QuantityDisplay qty={item.qty} className="w-8 text-center text-xs font-bold" />
+                      )}
+
                       <button
                         onClick={() => handleUpdateQty(item.sku, item.qty, 1)}
-                        className="w-7 h-7 flex items-center justify-center font-bold text-on-surface hover:bg-surface-container rounded transition-colors"
+                        disabled={updatingSku === item.sku}
+                        className="w-7 h-7 flex items-center justify-center font-bold text-on-surface hover:bg-surface-container rounded transition-colors disabled:opacity-40"
                       >
                         +
                       </button>

@@ -26,6 +26,46 @@ export class ZetaUserProfileRepository implements IUserProfileRepository {
     return `user:email:${email.toLowerCase()}`;
   }
 
+  async getPaginated(options: { limit: number; offset: number }): Promise<import('./product.repository.ts').PaginatedResult<UserProfile>> {
+    const { limit, offset } = options;
+    const filterPattern = 'user:*';
+
+    const baseUrl = process.env.ZETADB_URL || 'http://localhost:8080';
+    const queryUrl = `${baseUrl}/query?q=${filterPattern}&type=wildcard&limit=${limit}&offset=${offset}`;
+    const keysRes = await fetch(queryUrl, {
+      headers: {
+        'X-API-Key': process.env.ZETADB_API_KEY || '',
+      },
+    });
+    const keysData = await keysRes.json();
+
+    if (keysData.status !== 'success' || !keysData.data?.results) {
+      return { results: [], total: 0, limit, offset };
+    }
+
+    const filteredResults = keysData.data.results.filter(
+      (r: any) => !r.key.startsWith('user:uid:') && !r.key.startsWith('user:email:')
+    );
+
+    const activeUsers: UserProfile[] = [];
+    for (const r of filteredResults) {
+      const parsed = parseProfileDates(typeof r.value === 'string' ? JSON.parse(r.value) : r.value);
+      if (parsed && !parsed.deletedAt) {
+        activeUsers.push(parsed);
+      }
+    }
+
+    const totalActive = activeUsers.length;
+    const paginatedUsers = activeUsers.slice(offset, offset + limit);
+
+    return {
+      results: paginatedUsers,
+      total: totalActive,
+      limit,
+      offset,
+    };
+  }
+
   async getById(id: string): Promise<UserProfile | null> {
     const res = await this.client.get<{ value: UserProfile }>(this.getProfileKey(id));
     if (res.status === 'success' && res.data) {
@@ -123,9 +163,8 @@ export class ZetaUserProfileRepository implements IUserProfileRepository {
     const existing = await this.getById(id);
     if (!existing) return;
 
-    await this.client.delete(this.getProfileKey(id));
-    await this.client.delete(this.getUidKey(existing.uid));
-    await this.client.delete(this.getEmailKey(existing.email));
+    existing.deletedAt = new Date();
+    await this.client.put(this.getProfileKey(id), existing);
   }
 
   async addAddress(userId: string, address: Omit<AddressBookEntry, 'id'>): Promise<UserProfile> {
@@ -147,6 +186,40 @@ export class ZetaUserProfileRepository implements IUserProfileRepository {
     }
     updatedAddresses.push(newAddress);
     
+    return this.update(userId, { addresses: updatedAddresses });
+  }
+
+  async updateAddress(userId: string, addressId: string, address: Partial<Omit<AddressBookEntry, 'id'>>): Promise<UserProfile> {
+    const profile = await this.getById(userId);
+    if (!profile) {
+      throw new Error(`UserProfile ${userId} not found`);
+    }
+
+    let updatedAddresses = [...(profile.addresses || [])];
+    const targetIndex = updatedAddresses.findIndex(a => a.id === addressId);
+    if (targetIndex === -1) {
+      throw new Error(`Address ${addressId} not found`);
+    }
+
+    const currentAddr = updatedAddresses[targetIndex];
+    const isDefaultShipping = address.isDefaultShipping !== undefined ? address.isDefaultShipping : currentAddr!.isDefaultShipping;
+    const isDefaultBilling = address.isDefaultBilling !== undefined ? address.isDefaultBilling : currentAddr!.isDefaultBilling;
+
+    if (isDefaultShipping) {
+      updatedAddresses = updatedAddresses.map(a => ({ ...a, isDefaultShipping: false }));
+    }
+    if (isDefaultBilling) {
+      updatedAddresses = updatedAddresses.map(a => ({ ...a, isDefaultBilling: false }));
+    }
+
+    updatedAddresses[targetIndex] = {
+      ...currentAddr,
+      ...address,
+      id: addressId,
+      isDefaultShipping: isDefaultShipping as boolean,
+      isDefaultBilling: isDefaultBilling as boolean,
+    } as any;
+
     return this.update(userId, { addresses: updatedAddresses });
   }
 

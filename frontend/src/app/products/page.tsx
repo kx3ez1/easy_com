@@ -85,7 +85,9 @@ function ProductsContent() {
         const data = await res.json();
         if (active) {
           if (data.status === "success" && (data.data?.results || data.data?.products)) {
-            setProducts(data.data.results || data.data.products);
+            const rawProducts: Product[] = data.data.results || data.data.products;
+            const activeProducts = rawProducts.filter((p) => p.status === 'ACTIVE' || (!p.status && p.status !== 'ARCHIVED'));
+            setProducts(activeProducts);
           } else {
             throw new Error(data.message || data.error || "Failed to retrieve products list.");
           }
@@ -161,10 +163,16 @@ function ProductsContent() {
             </div>
 
             <div className="flex items-center gap-4 shrink-0">
-              <div className="text-right hidden md:block">
-                <p className="text-xs text-on-surface-variant font-medium">Signed in as</p>
+              <Link href="/profile" className="text-right hidden md:block group hover:opacity-80 transition-opacity">
+                <p className="text-[10px] uppercase font-bold text-surface-tint tracking-wider group-hover:underline">My Profile</p>
                 <p className="text-sm font-semibold text-on-surface">{user?.email}</p>
-              </div>
+              </Link>
+
+              <Link href="/profile" className="p-2 bg-surface hover:bg-surface-container rounded-full border border-outline transition-colors" aria-label="Profile">
+                <svg className="w-5 h-5 text-on-surface" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </Link>
 
               <Link href="/cart" className="relative p-2 bg-surface hover:bg-surface-container rounded-full border border-outline transition-colors" aria-label="Cart">
                 <svg className="w-5 h-5 text-on-surface" fill="none" stroke="currentColor" viewBox="0 0 24 24">

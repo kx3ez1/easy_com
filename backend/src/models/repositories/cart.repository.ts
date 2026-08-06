@@ -13,6 +13,8 @@ export interface ICheckoutRepository {
   getById(checkoutId: string): Promise<CheckoutSnapshot | null>;
   updateStatus(checkoutId: string, status: "completed" | "expired"): Promise<void>;
   getCheckoutsByDate(datePrefix: string): Promise<CheckoutSnapshot[]>;
+  getLiveLockedCheckouts(): Promise<CheckoutSnapshot[]>;
+  getAllCheckouts(statusFilter?: 'live' | 'expired' | 'completed' | 'all'): Promise<CheckoutSnapshot[]>;
   delete(checkoutId: string): Promise<void>;
 }
 

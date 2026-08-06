@@ -333,6 +333,51 @@ describe('Mutable Cart & Immutable Checkout Integration Tests', () => {
     await checkoutRepo.delete(chkPast);
   });
 
+  test('should retrieve live locked checkouts filtering out completed and expired ones', async () => {
+    const chkLive = `chk_live_${crypto.randomUUID().slice(0, 8)}`;
+    const chkExpired = `chk_exp_${crypto.randomUUID().slice(0, 8)}`;
+    const chkCompleted = `chk_comp_${crypto.randomUUID().slice(0, 8)}`;
+
+    const now = new Date();
+    await checkoutRepo.create({
+      checkout_id: chkLive,
+      user_id: 'user_live',
+      status: 'active',
+      expires_at: new Date(now.getTime() + 300000).toISOString(),
+      snapshot: { source_cart_version: 1, locked_items: [], locked_total: { amount: 10, currency: 'USD' } },
+      createdAt: now
+    });
+
+    await checkoutRepo.create({
+      checkout_id: chkExpired,
+      user_id: 'user_expired',
+      status: 'active',
+      expires_at: new Date(now.getTime() - 300000).toISOString(),
+      snapshot: { source_cart_version: 1, locked_items: [], locked_total: { amount: 10, currency: 'USD' } },
+      createdAt: now
+    });
+
+    await checkoutRepo.create({
+      checkout_id: chkCompleted,
+      user_id: 'user_completed',
+      status: 'completed',
+      expires_at: new Date(now.getTime() + 300000).toISOString(),
+      snapshot: { source_cart_version: 1, locked_items: [], locked_total: { amount: 10, currency: 'USD' } },
+      createdAt: now
+    });
+
+    const liveCheckouts = await checkoutRepo.getLiveLockedCheckouts();
+    const liveIds = liveCheckouts.map((c: any) => c.checkout_id);
+
+    expect(liveIds).toContain(chkLive);
+    expect(liveIds).not.toContain(chkExpired);
+    expect(liveIds).not.toContain(chkCompleted);
+
+    await checkoutRepo.delete(chkLive);
+    await checkoutRepo.delete(chkExpired);
+    await checkoutRepo.delete(chkCompleted);
+  });
+
   test('should get cart version history and retrieve specific version', async () => {
     const historyUserId = `user_history_${crypto.randomUUID().slice(0, 8)}`;
     

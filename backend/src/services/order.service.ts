@@ -27,14 +27,22 @@ export async function getOrders(): Promise<Order[]> {
 
 export async function findProductBySku(sku: string): Promise<{ product: Product; variantId?: string; name: string } | null> {
   const productRepo = RepositoryFactory.getProductRepository();
+
+  // First try direct ID lookup
+  const directProduct = await productRepo.getById(sku);
+  if (directProduct) {
+    return { product: directProduct, name: directProduct.name };
+  }
+
+  // Scan products for SKU or variant SKU/ID
   const paginated = await productRepo.getPaginated({ limit: 10000, offset: 0 });
   for (const product of paginated.results) {
-    if (product.sku === sku) {
+    if (product.id === sku || product.sku === sku) {
       return { product, name: product.name };
     }
     if (product.variants) {
       for (const variant of product.variants) {
-        if (variant.sku === sku) {
+        if (variant.id === sku || variant.sku === sku) {
           const variantDesc = variant.attributes
             ? Object.entries(variant.attributes).map(([k, v]) => `${k}: ${v}`).join(' / ')
             : 'Variant';

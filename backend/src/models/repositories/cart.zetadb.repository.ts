@@ -182,6 +182,51 @@ export class ZetaCheckoutRepository implements ICheckoutRepository {
     });
   }
 
+  async getLiveLockedCheckouts(): Promise<CheckoutSnapshot[]> {
+    return this.getAllCheckouts('live');
+  }
+
+  async getAllCheckouts(statusFilter: 'live' | 'expired' | 'completed' | 'all' = 'all'): Promise<CheckoutSnapshot[]> {
+    const baseUrl = process.env.ZETADB_URL || 'http://localhost:8080';
+    const queryUrl = `${baseUrl}/query?q=checkout:*&type=wildcard&limit=10000`;
+    const res = await fetch(queryUrl, {
+      headers: {
+        'X-API-Key': process.env.ZETADB_API_KEY || '',
+      },
+    });
+    const data = await res.json();
+    if (data.status !== 'success' || !data.data?.results) {
+      return [];
+    }
+    const results = data.data.results.filter(
+      (r: any) => r.key && !r.key.startsWith('checkout:id:')
+    );
+    const now = new Date();
+    const checkouts: CheckoutSnapshot[] = [];
+
+    for (const r of results) {
+      const val = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+      if (val.createdAt) {
+        val.createdAt = new Date(val.createdAt);
+      }
+      const checkout = val as CheckoutSnapshot;
+      const isExpired = checkout.status === 'expired' || (checkout.status === 'active' && new Date(checkout.expires_at) <= now);
+      const isLive = checkout.status === 'active' && new Date(checkout.expires_at) > now;
+
+      if (statusFilter === 'live' && isLive) {
+        checkouts.push(checkout);
+      } else if (statusFilter === 'expired' && isExpired) {
+        checkouts.push(checkout);
+      } else if (statusFilter === 'completed' && checkout.status === 'completed') {
+        checkouts.push(checkout);
+      } else if (statusFilter === 'all') {
+        checkouts.push(checkout);
+      }
+    }
+
+    return checkouts;
+  }
+
   async delete(checkoutId: string): Promise<void> {
     const mapRes = await this.client.get<string>(this.getCheckoutIdMapKey(checkoutId));
     if (mapRes.status === 'success' && mapRes.data) {

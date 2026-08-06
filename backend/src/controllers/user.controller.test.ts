@@ -1,7 +1,7 @@
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 import type { Response, NextFunction } from 'express';
 import type { AuthenticatedRequest } from '../middlewares/auth.middleware.ts';
-import { getProfile, updateProfile, addAddress, deleteAddress, setDefaultAddress } from './user.controller.ts';
+import { getProfile, updateProfile, addAddress, updateAddress, deleteAddress, setDefaultAddress } from './user.controller.ts';
 import { RepositoryFactory } from '../models/repositories/repository.factory.ts';
 
 describe('UserController Unit Tests', () => {
@@ -53,21 +53,59 @@ describe('UserController Unit Tests', () => {
     expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
   });
 
-  test('updateProfile should update and return profile data', async () => {
+  test('updateProfile should update and return profile data with sanitized fields', async () => {
     const mockUpdate = (jest.fn() as any).mockResolvedValue({
       id: 'user-123',
-      firstName: 'UpdatedName'
+      firstName: 'UpdatedName',
+      lastName: 'User'
     });
 
     jest.spyOn(RepositoryFactory, 'getUserProfileRepository').mockReturnValue({
       update: mockUpdate
     } as any);
 
-    mockRequest.body = { firstName: 'UpdatedName' };
+    mockRequest.body = { firstName: '  UpdatedName  ', lastName: 'User' };
     await updateProfile(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
 
-    expect(mockUpdate).toHaveBeenCalledWith('user-123', { firstName: 'UpdatedName' });
+    expect(mockUpdate).toHaveBeenCalledWith('user-123', { firstName: 'UpdatedName', lastName: 'User' });
     expect(responseData.data.profile.firstName).toBe('UpdatedName');
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
+  test('updateProfile should call next with AppError when firstName contains invalid characters', async () => {
+    mockRequest.body = { firstName: 'Updated<script>' };
+    await updateProfile(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
+
+    expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  test('updateProfile should call next with AppError when firstName is empty or only whitespace', async () => {
+    mockRequest.body = { firstName: '   ' };
+    await updateProfile(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
+
+    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'First Name cannot be empty'
+    }));
+  });
+
+  test('updateProfile should allow empty string for optional lastName and phoneNumber', async () => {
+    const mockUpdate = (jest.fn() as any).mockResolvedValue({
+      id: 'user-123',
+      firstName: 'John',
+      lastName: '',
+      phoneNumber: ''
+    });
+
+    jest.spyOn(RepositoryFactory, 'getUserProfileRepository').mockReturnValue({
+      update: mockUpdate
+    } as any);
+
+    mockRequest.body = { firstName: 'John', lastName: '', phoneNumber: '' };
+    await updateProfile(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
+
+    expect(mockUpdate).toHaveBeenCalledWith('user-123', { firstName: 'John', lastName: '', phoneNumber: '' });
+    expect(responseData.data.profile.lastName).toBe('');
+    expect(responseData.data.profile.phoneNumber).toBe('');
     expect(mockNext).not.toHaveBeenCalled();
   });
 
@@ -130,5 +168,41 @@ describe('UserController Unit Tests', () => {
     mockRequest.body = { type: 'invalid' };
     await setDefaultAddress(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
     expect(mockNext).toHaveBeenCalledWith(expect.any(Error));
+  });
+
+  test('updateAddress should update specified address entry and return profile', async () => {
+    const mockUpdateAddr = (jest.fn() as any).mockResolvedValue({
+      id: 'user-123',
+      addresses: [{ id: 'addr-1', label: 'Work', street1: '456 Main St' }]
+    });
+
+    jest.spyOn(RepositoryFactory, 'getUserProfileRepository').mockReturnValue({
+      updateAddress: mockUpdateAddr
+    } as any);
+
+    mockRequest.params = { addressId: 'addr-1' };
+    mockRequest.body = { label: 'Work', street1: '456 Main St' };
+    await updateAddress(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
+
+    expect(mockUpdateAddr).toHaveBeenCalledWith('user-123', 'addr-1', { label: 'Work', street1: '456 Main St' });
+    expect(responseData.data.profile.addresses[0].label).toBe('Work');
+    expect(mockNext).not.toHaveBeenCalled();
+  });
+
+  test('addAddress should call next with AppError when address label is invalid', async () => {
+    mockRequest.body = { label: 'InvalidCategory' };
+    await addAddress(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
+    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('Address label must be one of')
+    }));
+  });
+
+  test('updateAddress should call next with AppError when updated label is invalid', async () => {
+    mockRequest.params = { addressId: 'addr-1' };
+    mockRequest.body = { label: 'CustomUnallowedLabel' };
+    await updateAddress(mockRequest as AuthenticatedRequest, mockResponse as Response, mockNext);
+    expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({
+      message: expect.stringContaining('Address label must be one of')
+    }));
   });
 });

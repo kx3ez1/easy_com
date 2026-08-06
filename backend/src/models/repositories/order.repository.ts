@@ -14,5 +14,6 @@ export interface IOrderRepository {
   getById(id: string): Promise<Order | null>;
   create(order: Omit<Order, 'id'>): Promise<Order>;
   update(id: string, order: Partial<Order>): Promise<Order>;
+  delete(id: string): Promise<void>;
   getPaginated(options: OrderQueryOptions): Promise<PaginatedResult<Order>>;
 }

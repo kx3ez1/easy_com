@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({ path: path.resolve(process.cwd(), '.env'), override: true });
 import diagnostics_channel from 'node:diagnostics_channel';
 import { performance } from 'node:perf_hooks';
 import { afterAll, beforeAll } from '@jest/globals';

@@ -18,4 +18,5 @@ export interface IProductRepository {
   getById(id: string): Promise<Product | null>;
   create(product: Omit<Product, 'id'>): Promise<Product>;
   update(id: string, product: Partial<Product>): Promise<Product>;
+  delete(id: string): Promise<void>;
 }

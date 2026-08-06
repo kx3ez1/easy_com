@@ -93,6 +93,22 @@
     --on-error-container: #ffdad6;
     --surface-variant: #353535;
   }
+
+  button,
+  select,
+  option,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  input:disabled,
+  select:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* Custom Sports Editorial Typography Utilities */
@@ -138,4 +154,13 @@ body.show-recaptcha .grecaptcha-badge {
   visibility: visible !important;
   opacity: 1 !important;
   pointer-events: auto !important;
+}
+
+/* Hide scrollbar for Chrome, Safari, Opera, Firefox and Edge */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }

@@ -2,6 +2,15 @@ import type { IProductRepository, PaginatedResult } from './product.repository.t
 import type { Product } from '../types/catalog.types.ts';
 import { ZetaDBClient } from '../../database/zetadb/zetadb.client.ts';
 
+function normalizeProduct(product: any): Product {
+  if (!product) return product;
+  const normalized = { ...product };
+  if (typeof normalized.price === 'number') {
+    normalized.price = { amount: normalized.price, currency: 'USD' };
+  }
+  return normalized as Product;
+}
+
 export class ZetaProductRepository implements IProductRepository {
   private client = new ZetaDBClient();
 
@@ -12,7 +21,7 @@ export class ZetaProductRepository implements IProductRepository {
   async getById(id: string): Promise<Product | null> {
     const res = await this.client.get<{ value: Product }>(this.getProductKey(id));
     if (res.status === 'success' && res.data) {
-      return res.data.value;
+      return normalizeProduct(res.data.value);
     }
     return null;
   }
@@ -44,7 +53,8 @@ export class ZetaProductRepository implements IProductRepository {
     }
 
     const products: Product[] = keysData.data.results.map((r: any) => {
-      return typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+      const val = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+      return normalizeProduct(val);
     });
 
     return {
@@ -81,5 +91,13 @@ export class ZetaProductRepository implements IProductRepository {
       throw new Error(`Failed to update product in ZetaDB: ${res.error?.message}`);
     }
     return updatedProduct;
+  }
+
+  async delete(id: string): Promise<void> {
+    const existing = await this.getById(id);
+    if (!existing) return;
+    existing.deletedAt = new Date();
+    existing.status = 'ARCHIVED';
+    await this.client.put(this.getProductKey(id), existing);
   }
 }

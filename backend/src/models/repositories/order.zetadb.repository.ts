@@ -132,12 +132,10 @@ export class ZetaOrderRepository implements IOrderRepository {
     const existing = await this.getById(id);
     if (!existing) return;
 
+    existing.deletedAt = new Date();
+    existing.status = 'CANCELLED';
     const timestamp = existing.createdAt.toISOString();
-    await this.client.delete(this.getOrderKey(timestamp, id));
-    await this.client.delete(this.getOrderIdMapKey(id));
-    if (existing.customerId) {
-      await this.client.delete(`order:customer:${existing.customerId}:${timestamp}:${id}`);
-    }
+    await this.client.put(this.getOrderKey(timestamp, id), existing);
   }
 
   async getPaginated(options: OrderQueryOptions): Promise<PaginatedResult<Order>> {

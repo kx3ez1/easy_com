@@ -107,6 +107,9 @@ function ProductDetailsContent() {
         if (active) {
           if (data.status === "success" && data.data?.product) {
             const prod = data.data.product;
+            if (prod.status === 'ARCHIVED') {
+              throw new Error("This product has been archived and is no longer available.");
+            }
             setProduct(prod);
             if (prod.variants && prod.variants.length > 0) {
               setSelectedVariant(prod.variants[0]);
@@ -139,8 +142,11 @@ function ProductDetailsContent() {
     const sku = selectedVariant?.sku || product.sku || product.id;
     const priceAmount = selectedVariant?.price?.amount ?? product.price.amount;
 
-    setAddingToCart(true);
     setSuccessMessage(false);
+
+    const timer = setTimeout(() => {
+      setAddingToCart(true);
+    }, 250);
 
     try {
       // Find if item is already in cart
@@ -179,6 +185,7 @@ function ProductDetailsContent() {
       console.error("Add to cart error:", err);
       alert("Failed to add item to cart. Please try again.");
     } finally {
+      clearTimeout(timer);
       setAddingToCart(false);
     }
   };
@@ -334,15 +341,21 @@ function ProductDetailsContent() {
                   </span>
                   <div className="flex items-center gap-3">
                     <button
-                      disabled={quantity <= 1}
+                      disabled={quantity <= 1 || addingToCart}
                       onClick={() => setQuantity(quantity - 1)}
                       className="w-10 h-10 border border-outline rounded-lg flex items-center justify-center font-bold text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50"
                     >
                       -
                     </button>
-                    <QuantityDisplay qty={quantity} className="w-12 text-center font-extrabold text-base" />
+                    {addingToCart ? (
+                      <div className="w-12 flex items-center justify-center">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-surface-tint/30 border-t-surface-tint"></div>
+                      </div>
+                    ) : (
+                      <QuantityDisplay qty={quantity} className="w-12 text-center font-extrabold text-base" />
+                    )}
                     <button
-                      disabled={quantity >= stockQty}
+                      disabled={quantity >= stockQty || addingToCart}
                       onClick={() => setQuantity(quantity + 1)}
                       className="w-10 h-10 border border-outline rounded-lg flex items-center justify-center font-bold text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50"
                     >

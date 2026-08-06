@@ -46,7 +46,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-on-background">
+      <body className="min-h-full flex flex-col bg-background text-on-background pb-20">
         <StoreProvider>
           {children}
         </StoreProvider>

@@ -21,5 +21,6 @@ export interface UserProfile {
   metadata?: Record<string, unknown>;
   createdAt: Date;
   updatedAt?: Date;
+  deletedAt?: Date;
   lastLogin?: Date;
 }

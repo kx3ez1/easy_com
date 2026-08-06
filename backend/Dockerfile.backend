@@ -31,7 +31,7 @@ COPY --from=builder /app/src ./src
 COPY public/ ./public
 
 # Copy Firebase credentials
-COPY e-commerce-34ab7-2216e35bbeaa.json ./e-commerce-34ab7-2216e35bbeaa.json
+COPY e-commerce-34ab7-firebase-adminsdk-fbsvc-c706bd32ea.json ./e-commerce-34ab7-firebase-adminsdk-fbsvc-c706bd32ea.json
 
 # Expose backend port
 EXPOSE 3000

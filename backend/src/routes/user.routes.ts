@@ -6,6 +6,7 @@ const router = Router();
 router.get('/me', userController.getProfile);
 router.post('/me', userController.updateProfile);
 router.post('/me/addresses', userController.addAddress);
+router.put('/me/addresses/:addressId', userController.updateAddress);
 router.post('/me/addresses/:addressId', userController.deleteAddress);
 router.post('/me/addresses/:addressId/default', userController.setDefaultAddress);
 

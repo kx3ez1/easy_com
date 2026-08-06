@@ -11,12 +11,14 @@ import * as firebase_admin from 'firebase-admin';
 import fs from 'fs';
 import path from 'path';
 import { checkAuth, syncUserProfile } from './middlewares/auth.middleware.ts';
+import { checkAdmin } from './middlewares/admin.middleware.ts';
+import { adminApiV1 } from './routes/admin_api_v1.ts';
 
 // Load environment variables from your .env file
 dotenv.config();
 
 try {
-  const serviceAccountPath = path.resolve('e-commerce-34ab7-2216e35bbeaa.json');
+  const serviceAccountPath = path.resolve('e-commerce-34ab7-firebase-adminsdk-fbsvc-c706bd32ea.json');
   const serviceAccount = JSON.parse(fs.readFileSync(serviceAccountPath, 'utf8'));
 
   firebase_admin.initializeApp({
@@ -37,6 +39,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 app.use('/api/v1', checkAuth, syncUserProfile, API_V1)
+app.use('/api/admin/v1', checkAuth, syncUserProfile, checkAdmin, adminApiV1);
 
 // Health Check Route
 app.get('/api/health', (req: Request, res: Response) => {
